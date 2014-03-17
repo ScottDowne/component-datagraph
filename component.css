@@ -1,0 +1,121 @@
+:host {
+  display: block;
+  width: 100%;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+:host h1 {
+  font-size: 18px;
+  border-bottom: solid 2px #CCC;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  text-shadow: 0px 1px 0px white;
+}
+
+:host #keys-wrapper {
+  font-size: 14px;
+  text-align: center;
+  padding: 10px;
+  border-bottom: solid 1px #CCC;
+  background: #EFEFEF;
+}
+
+
+:host #keys-wrapper h2 {
+  color: #777;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: normal;
+  text-align: center;
+}
+
+:host #keys {
+  position: relative;
+}
+
+:host .keyConfig {
+  margin: 0 0 2px 0;
+  text-align: center;
+  color: #333;
+  font-size: 13px;
+}
+
+:host .graph-wrapper {
+  padding: 10px 40px 10px 20px ;
+}
+
+:host .graph-container {
+  padding: 10px 0;
+  border-left: solid 1px #777;
+  border-right: solid 1px #CCC;
+}
+
+:host .barGroup {
+  background: white;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+:host .barGroup:last-child {
+  margin-bottom: 0px;
+}
+
+:host .barGroup .bar {
+  width: 0px;
+  height: 12px;
+  background: #1b8db7;
+  margin-bottom: 2px;
+  -webkit-transition: width ease-out .1s;
+  -moz-transition: width ease-out .1s;
+}
+
+:host .barGroup .bar:last-child {
+  margin-bottom: 0px;
+}
+
+:host .barGroup .bar.blue {
+  background: #1b8db7;
+}
+
+:host .barGroup .bar.green {
+  background: #68bf22;
+}
+
+:host .barGroup .bar.orange {
+  background: #e5970f;
+}
+
+:host .barGroup .bar.red {
+  background: #be1f1f;
+}
+
+
+:host .item-actions {
+  padding: 10px 5px 10px 5px;
+  background: #EFEFEF;
+  text-align: center;
+  margin: 5px 10px 0px 10px;
+}
+
+:host .scale {
+  text-align: right;
+  margin-bottom: 5px;
+  color: #666;
+}
+
+:host .scale .min {
+  float: left;
+  position: relative;
+  left: -3px;
+}
+
+:host .scale .max {
+
+  width: 80px;
+
+  position: relative;
+  text-align: center;
+  display: inline-block;
+  left: 40px;
+}
