@@ -67,7 +67,6 @@ require(['data-manager'], function(dataManager) {
       }
     },
     datanameChanged : function (oldValue, newValue) {
-      console.log("datanamechanged");
       this.showData();
     },
     showItem: function(e){
@@ -77,7 +76,6 @@ require(['data-manager'], function(dataManager) {
       // If we want to indicate the scope of the data that is shown, there is where we'd do it.
       // var scopeEl = this.shadowRoot.querySelector("#datascope");
       // this.updateKeyUI();
-      console.log("datascopechanged");
       this.showData();
     },
     deleteItem: function(id){
@@ -346,8 +344,6 @@ require(['data-manager'], function(dataManager) {
                 }
              }
           }
-
-           console.log("max is " +   max);
 
           self.shadowRoot.querySelector(".max").innerHTML = max;
 
