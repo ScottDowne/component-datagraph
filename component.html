@@ -11,7 +11,8 @@
 
 
   <shadow></shadow>
-  <script type="text/json" id="ceci-definition">
+</template>
+<ceci-definition>
   {
     "thumbnail": "./thumbnail.png",
     "name" : "Data Graph",
@@ -32,8 +33,7 @@
       }
     }
   }
-  </script>
-</template>
+</ceci-definition>
 <tags>data</tags>
 <script>
 Polymer("ceci-datagraph", {
@@ -43,6 +43,20 @@ Polymer("ceci-datagraph", {
   ready: function(){
     this.super();
     this.datascope = [];
+    var self = this;
+    var dataManager = document.querySelector("data-manager");
+    dataManager.addEventListener("dataCollectionAdded", function(e) {
+      var collection = e.detail.collection;
+      self.showData();
+    });
+    dataManager.addEventListener("dataFieldAdded", function(e) {
+      var field = e.detail.field;
+      self.showData();
+    });
+    dataManager.addEventListener("dataFieldRemoved", function(e) {
+      var field = e.detail.field;
+      self.showData();
+    });
   },
   toggleKeyConfig: function(){
     var keysEl = this.shadowRoot.querySelector("#keys");
@@ -194,7 +208,7 @@ Polymer("ceci-datagraph", {
         var keyName = self.keyConfig[j].keyName;
         var keyConfigEl = document.createElement("div");
         keyConfigEl.classList.add("keyConfig");
-        keyConfigEl.innerHTML = "<label><input data-key="+keyName+" type='checkbox' /> " + keyName + "</label> <select><option value='blue'>Blue</option><option value='green'>Green</option><option value='orange'>Orange</option><option value='red'>Red</option></select>";
+        keyConfigEl.innerHTML = "<label><input data-key="+keyName+" type='checkbox' > " + keyName + "</label> <select><option value='blue'>Blue</option><option value='green'>Green</option><option value='orange'>Orange</option><option value='red'>Red</option></select>";
         keyConfigEl.querySelector("input").checked = self.keyConfig[j].display;
         keyConfigEl.querySelector("select").value = self.keyConfig[j].color;
 
@@ -269,14 +283,16 @@ Polymer("ceci-datagraph", {
 
     var self = this;
 
-    this.getOrWaitForCeciApp(function(ceciApp){
+    //this.getOrWaitForCeciApp(function(ceciApp){
 
-      ceciApp.getFirebaseObject('form-data', "", function(data){
+      //ceciApp.getFirebaseObject('form-data', "", function(data){
 
         if(typeof self.graphschema == "string") {
           self.graphschema = JSON.parse(self.graphschema);
         }
-
+// Just assuming first collection for now...
+        var data = window.CeciData.collections[0];
+console.log(data);
         self.storedData = data || {};
 
         //Handle case where dataview is just loading and listSchema hasn't been parsed and
@@ -285,7 +301,7 @@ Polymer("ceci-datagraph", {
         //   those.keyConfig = those.storedData[those.dataname+"_listschema"];
         // }
 
-        var lastData;
+        /*var lastData;
 
         for (var i = 0; i < self.datascope.length; i++){
           var scopeItem = self.datascope[i];
@@ -299,7 +315,7 @@ Polymer("ceci-datagraph", {
           self.storedData = blam;
         } else {
           self.storedData = self.storedData[self.dataname] || [];
-        }
+        }*/
 
         var itemList = self.shadowRoot.querySelector("#items");
         itemList.innerHTML = "";
@@ -309,15 +325,16 @@ Polymer("ceci-datagraph", {
 
         var max = 0;
 
-        for(var i = 0; i < self.storedData.length; i++){
-           var item = self.storedData[i];
+        for(var i = 0; i < self.storedData.data.length; i++){
+           var item = self.storedData.data[i];
+console.log(item);
            for(var key in item){
              var v = item[key];
 
-             for(var j = 0; j < self.graphschema.length; j++) {
-               var k = self.graphschema[j].keyName;
+             for(var j = 0; j < self.storedData.model.length; j++) {
+               var k = self.storedData.model[j].name;
                if(k == key) {
-                 if(self.graphschema[j].display) {
+                 if(self.storedData.model[j].type) {
                    if(parseInt(v)){
 
                      if(parseInt(v) > parseInt(max)) {
@@ -332,27 +349,27 @@ Polymer("ceci-datagraph", {
            }
         }
 
-        // console.log("max is " +   max);
+         console.log("max is " +   max);
 
         self.shadowRoot.querySelector(".max").innerHTML = max;
 
-        for(var i = 0; i < self.storedData.length; i++){
+        for(var i = 0; i < self.storedData.data.length; i++){
 
           var itemEl = document.createElement("div");
           itemEl.classList.add("barGroup");
 
-          var item = self.storedData[i];
+          var item = self.storedData.data[i];
 
           // for each item in a data group
           for(var key in item){
 
-            for(var j = 0; j < self.graphschema.length; j++) {
-               var k = self.graphschema[j].keyName;
+            for(var j = 0; j < self.storedData.model.length; j++) {
+               var k = self.storedData.model[j].name;
                if(k == key && parseInt(item[key])) {
-                 if(self.graphschema[j].display) {
+                 if(self.storedData.model[j].type) {
                    var barEl = document.createElement("div");
                    barEl.classList.add("bar");
-                   barEl.classList.add(self.graphschema[j].color);
+                   barEl.style.backgroundColor = self.storedData.model[j].name;//classList.add(self.storedData.model[j].color);
 
                    setTimeout(
                     (function(s,v) {
@@ -369,15 +386,15 @@ Polymer("ceci-datagraph", {
           itemList.appendChild(itemEl);
         }
 
-        if(typeof self.graphschema == "object") {
-          self.graphschema = JSON.stringify(self.graphschema);
+        if(typeof self.storedData.model == "object") {
+          //self.storedData.model = JSON.stringify(self.storedData.model);
         }
 
-      });
+      //});
 
 
 
-    });
+    //});
 
   }
 });
