@@ -36,367 +36,366 @@
 </ceci-definition>
 <tags>data</tags>
 <script>
-Polymer("ceci-datagraph", {
-  keyConfig: {},
-  storedData : {},
-  dataChangedEvent : new CustomEvent("storage"),
-  ready: function(){
-    this.super();
-    this.datascope = [];
-    var self = this;
-    var dataManager = document.querySelector("data-manager");
-    dataManager.addEventListener("dataCollectionAdded", function(e) {
-      var collection = e.detail.collection;
-      self.showData();
-    });
-    dataManager.addEventListener("dataFieldAdded", function(e) {
-      var field = e.detail.field;
-      self.showData();
-    });
-    dataManager.addEventListener("dataFieldRemoved", function(e) {
-      var field = e.detail.field;
-      self.showData();
-    });
-  },
-  toggleKeyConfig: function(){
-    var keysEl = this.shadowRoot.querySelector("#keys");
-    if(keysEl.getAttribute("show") == "no") {
-      keysEl.setAttribute("show","yes");
-    } else {
-      keysEl.setAttribute("show","no");
-    }
-  },
-  datanameChanged : function (oldValue, newValue) {
-    console.log("datanamechanged");
-    this.showData();
-  },
-  showItem: function(e){
-    this.datascope = e;
-  },
-  datascopeChanged: function(){
-    // If we want to indicate the scope of the data that is shown, there is where we'd do it.
-    // var scopeEl = this.shadowRoot.querySelector("#datascope");
-    // this.updateKeyUI();
-    console.log("datascopechanged");
-    this.showData();
-  },
-  deleteItem: function(id){
-    var self = this;
-    var ca = document.querySelector("ceci-app");
-    if(!ca){
-      window.addEventListener("CeciDataConnectionLoaded", function(){
-        self._deleteItemFirebase(id);
+require(['data-manager'], function(dataManager) {
+  Polymer("ceci-datagraph", {
+    keyConfig: {},
+    storedData : {},
+    dataChangedEvent : new CustomEvent("storage"),
+    ready: function(){
+      this.super();
+      this.datascope = [];
+      var self = this;
+      dataManager.on("dataCollectionAdded", function(e) {
+        var collection = e.detail.collection;
+        self.showData();
       });
-    } else {
-      if(ca.firebase){
-        this._deleteItemFirebase(id);
-      }
-    }
-  },
-  _deleteItemFirebase: function(id){
-    var self = this;
-    var ca = document.querySelector("ceci-app")
-    ca.getFirebaseObject('form-data', "", function(data){
-      self.storedData = data || {};
-      for (var i = 0; i < self.datascope.length; i++){
-        var scopeItem = self.datascope[i];
-        self.storedData = self.storedData[scopeItem["dataset"]][scopeItem["index"]];
-      }
-      self.storedData = self.storedData[self.dataname] || [];
-      self.storedData.splice(id, 1);
-      ca.setFirebaseObject('form-data', data);
-      window.dispatchEvent(self.dataChangedEvent);
-    });
-  },
-  updateKeyUI: function(){
-    var self = this;
-    var ca = document.querySelector("ceci-app");
-    if(!ca){
-      window.addEventListener("CeciDataConnectionLoaded", function(){
-        self._updateKeyUIFirebase();
-      })
-    } else {
-      if(ca.firebase){
-        this._updateKeyUIFirebase();
-      } else {
-        window.addEventListener("CeciDataConnectionLoaded", function(){
-          self._updateKeyUIFirebase();
-        });
-      }
-    }
-  },
-  _updateKeyUIFirebase : function(){
-
-    //This builds the UI that lets you choose how each key in the data set is displayed!
-    var self = this;
-
-    document.querySelector("ceci-app").getFirebaseObject('form-data',"", function(data){
-
-      // Clears out the old UI
-      self.shadowRoot.querySelector("#keys").innerHTML = "";
-
-      // Tries to grab the stored Data
-      var db = data || {};
-      self.storedData = db[self.dataname] || [];
-
-      // Tries to grab it's own keyConfig (which tells it how to render each Key field)
-      // self.keyConfig = JSON.parse(self.graphschema) || [];
-      if(typeof self.graphschema == "string"){
-        self.graphschema = JSON.parse(self.graphschema);
-      }
-
-      self.keyConfig = self.graphschema || [];
-
-
-      var formSchema = db[self.dataname + "_formschema"] || {};
-      // Grabs the schema from the form
-      // Builds a list of all the keys from the form and data set
-      // To know what to display options for.
-      var keylist = [];
-
-      for(var i = 0; i < self.storedData.length; i++){
-        var item = self.storedData[i];
-        for (var key in item) {
-          if(keylist.indexOf(key) < 0) {
-            keylist.push(key);
-          }
-        }
-      }
-
-      for(var j = 0; j < formSchema.length; j++){
-        var item = formSchema[j];
-        if(keylist.indexOf(item["name"]) < 0 ){
-          keylist.push(item.name);
-        }
-      }
-
-
-
-      //Set a default
-      //Should base it on first value in the derpdown
-
-      for(var k = 0; k < keylist.length; k++){
-
-        var key = keylist[k];
-
-        // check if it's in the key config'
-        var found = false;
-
-        for(var l = 0; l < self.keyConfig.length; l++) {
-          var item = self.keyConfig[l];
-
-          if(item.keyName == key) {
-            found = true;
-          }
-
-        }
-        if(found == false) {
-          self.keyConfig.push({"keyName":key,"display":true, color: "blue"});
-        }
-      }
-
-      // Clean up the keyConfig
-      for(var j = 0; j < self.keyConfig.length; j ++){
-        var keyName = self.keyConfig[j].keyName;
-        if(keylist.indexOf(keyName) < 0){
-          self.keyConfig.splice(j,1);
-        }
-      }
-
-      // Build the UI for choosing what keys to display and using what colors
-      for(var j = 0; j < self.keyConfig.length; j ++){
-        var keyName = self.keyConfig[j].keyName;
-        var keyConfigEl = document.createElement("div");
-        keyConfigEl.classList.add("keyConfig");
-        keyConfigEl.innerHTML = "<label><input data-key="+keyName+" type='checkbox' > " + keyName + "</label> <select><option value='blue'>Blue</option><option value='green'>Green</option><option value='orange'>Orange</option><option value='red'>Red</option></select>";
-        keyConfigEl.querySelector("input").checked = self.keyConfig[j].display;
-        keyConfigEl.querySelector("select").value = self.keyConfig[j].color;
-
-        keyConfigEl.querySelector("input").addEventListener("change",function(){
-          self.updateSchema();
-        });
-
-        keyConfigEl.querySelector("select").addEventListener("change",function(){
-          self.updateSchema();
-        });
-
-        self.shadowRoot.querySelector("#keys").appendChild(keyConfigEl);
-      }
-
-      self.updateSchema();
-
-    });
-  },
-  updateSchema : function() {
-    //This parses the schema UI and updates the graphschema so that showData know what to show
-
-    this.graphschema = [];
-
-    var options = this.shadowRoot.querySelectorAll("#keys .keyConfig");
-
-    for(var o in options){
-      if(options.hasOwnProperty(o)){
-        var keyOption = options[o];
-        var input = keyOption.querySelector("input");
-        var keyName = input.getAttribute("data-key");
-        var display = input.checked;
-        var colorSelect = keyOption.querySelector("select");
-        var pushMe = { keyName : keyName, display : display, color : colorSelect.value};
-        this.graphschema.push(pushMe);
-      }
-    }
-
-    this.showData();
-
-  },
-  enteredView : function(){
-    var self = this;
-
-    //Listens to updates to the data set
-    // Problem is it listens to every god-damn storage and formchange
-
-    window.addEventListener('storage', this.updateKeyUI.bind(this), false);
-    window.addEventListener('formChange', this.updateKeyUI.bind(this), false);
-
-    this.updateKeyUI(); //Updates the graph display options UI
-
-    this.super();
-
-  },
-  getOrWaitForCeciApp: function(callback){
-    var ceciApp = document.querySelector("ceci-app");
-    if(!ceciApp){
-      window.addEventListener("CeciDataConnectionLoaded", function(){
-        callback(document.querySelector("ceci-app"));
+      dataManager.on("dataFieldAdded", function(e) {
+        var field = e.detail.field;
+        self.showData();
       });
-    } else {
-      if(ceciApp && ceciApp.firebase){
-        callback(ceciApp);
+      dataManager.on("dataFieldRemoved", function(e) {
+        var field = e.detail.field;
+        self.showData();
+      });
+    },
+    toggleKeyConfig: function(){
+      var keysEl = this.shadowRoot.querySelector("#keys");
+      if(keysEl.getAttribute("show") == "no") {
+        keysEl.setAttribute("show","yes");
       } else {
-        window.addEventListener("CeciDataConnectionLoaded", function(){
-          callback(document.querySelector("ceci-app"));
-        });
+        keysEl.setAttribute("show","no");
       }
-    }
-  },
-  showData: function(){
-
-    var self = this;
-
-    //this.getOrWaitForCeciApp(function(ceciApp){
-
-      //ceciApp.getFirebaseObject('form-data', "", function(data){
-
-        if(typeof self.graphschema == "string") {
-          self.graphschema = JSON.parse(self.graphschema);
+    },
+    datanameChanged : function (oldValue, newValue) {
+      console.log("datanamechanged");
+      this.showData();
+    },
+    showItem: function(e){
+      this.datascope = e;
+    },
+    datascopeChanged: function(){
+      // If we want to indicate the scope of the data that is shown, there is where we'd do it.
+      // var scopeEl = this.shadowRoot.querySelector("#datascope");
+      // this.updateKeyUI();
+      console.log("datascopechanged");
+      this.showData();
+    },
+    deleteItem: function(id){
+      var self = this;
+      var ca = document.querySelector("ceci-app");
+      if(!ca){
+        window.addEventListener("CeciDataConnectionLoaded", function(){
+          self._deleteItemFirebase(id);
+        });
+      } else {
+        if(ca.firebase){
+          this._deleteItemFirebase(id);
         }
-// Just assuming first collection for now...
-        var data = window.CeciData.collections[0];
-console.log(data);
+      }
+    },
+    _deleteItemFirebase: function(id){
+      var self = this;
+      var ca = document.querySelector("ceci-app")
+      ca.getFirebaseObject('form-data', "", function(data){
         self.storedData = data || {};
-
-        //Handle case where dataview is just loading and listSchema hasn't been parsed and
-        //stored in keyConfig
-        // if(those.keyConfig && Object.getOwnPropertyNames(those.keyConfig).length < 1){
-        //   those.keyConfig = those.storedData[those.dataname+"_listschema"];
-        // }
-
-        /*var lastData;
-
         for (var i = 0; i < self.datascope.length; i++){
           var scopeItem = self.datascope[i];
           self.storedData = self.storedData[scopeItem["dataset"]][scopeItem["index"]];
-          lastData = scopeItem["dataset"];
+        }
+        self.storedData = self.storedData[self.dataname] || [];
+        self.storedData.splice(id, 1);
+        ca.setFirebaseObject('form-data', data);
+        window.dispatchEvent(self.dataChangedEvent);
+      });
+    },
+    updateKeyUI: function(){
+      var self = this;
+      var ca = document.querySelector("ceci-app");
+      if(!ca){
+        window.addEventListener("CeciDataConnectionLoaded", function(){
+          self._updateKeyUIFirebase();
+        })
+      } else {
+        if(ca.firebase){
+          this._updateKeyUIFirebase();
+        } else {
+          window.addEventListener("CeciDataConnectionLoaded", function(){
+            self._updateKeyUIFirebase();
+          });
+        }
+      }
+    },
+    _updateKeyUIFirebase : function(){
+
+      //This builds the UI that lets you choose how each key in the data set is displayed!
+      var self = this;
+
+      document.querySelector("ceci-app").getFirebaseObject('form-data',"", function(data){
+
+        // Clears out the old UI
+        self.shadowRoot.querySelector("#keys").innerHTML = "";
+
+        // Tries to grab the stored Data
+        var db = data || {};
+        self.storedData = db[self.dataname] || [];
+
+        // Tries to grab it's own keyConfig (which tells it how to render each Key field)
+        // self.keyConfig = JSON.parse(self.graphschema) || [];
+        if(typeof self.graphschema == "string"){
+          self.graphschema = JSON.parse(self.graphschema);
         }
 
-        if(lastData == self.dataname){
-          var blam = [];
-          blam.push(self.storedData);
-          self.storedData = blam;
+        self.keyConfig = self.graphschema || [];
+
+
+        var formSchema = db[self.dataname + "_formschema"] || {};
+        // Grabs the schema from the form
+        // Builds a list of all the keys from the form and data set
+        // To know what to display options for.
+        var keylist = [];
+
+        for(var i = 0; i < self.storedData.length; i++){
+          var item = self.storedData[i];
+          for (var key in item) {
+            if(keylist.indexOf(key) < 0) {
+              keylist.push(key);
+            }
+          }
+        }
+
+        for(var j = 0; j < formSchema.length; j++){
+          var item = formSchema[j];
+          if(keylist.indexOf(item["name"]) < 0 ){
+            keylist.push(item.name);
+          }
+        }
+
+
+
+        //Set a default
+        //Should base it on first value in the derpdown
+
+        for(var k = 0; k < keylist.length; k++){
+
+          var key = keylist[k];
+
+          // check if it's in the key config'
+          var found = false;
+
+          for(var l = 0; l < self.keyConfig.length; l++) {
+            var item = self.keyConfig[l];
+
+            if(item.keyName == key) {
+              found = true;
+            }
+
+          }
+          if(found == false) {
+            self.keyConfig.push({"keyName":key,"display":true, color: "blue"});
+          }
+        }
+
+        // Clean up the keyConfig
+        for(var j = 0; j < self.keyConfig.length; j ++){
+          var keyName = self.keyConfig[j].keyName;
+          if(keylist.indexOf(keyName) < 0){
+            self.keyConfig.splice(j,1);
+          }
+        }
+
+        // Build the UI for choosing what keys to display and using what colors
+        for(var j = 0; j < self.keyConfig.length; j ++){
+          var keyName = self.keyConfig[j].keyName;
+          var keyConfigEl = document.createElement("div");
+          keyConfigEl.classList.add("keyConfig");
+          keyConfigEl.innerHTML = "<label><input data-key="+keyName+" type='checkbox' > " + keyName + "</label> <select><option value='blue'>Blue</option><option value='green'>Green</option><option value='orange'>Orange</option><option value='red'>Red</option></select>";
+          keyConfigEl.querySelector("input").checked = self.keyConfig[j].display;
+          keyConfigEl.querySelector("select").value = self.keyConfig[j].color;
+
+          keyConfigEl.querySelector("input").addEventListener("change",function(){
+            self.updateSchema();
+          });
+
+          keyConfigEl.querySelector("select").addEventListener("change",function(){
+            self.updateSchema();
+          });
+
+          self.shadowRoot.querySelector("#keys").appendChild(keyConfigEl);
+        }
+
+        self.updateSchema();
+
+      });
+    },
+    updateSchema : function() {
+      //This parses the schema UI and updates the graphschema so that showData know what to show
+
+      this.graphschema = [];
+
+      var options = this.shadowRoot.querySelectorAll("#keys .keyConfig");
+
+      for(var o in options){
+        if(options.hasOwnProperty(o)){
+          var keyOption = options[o];
+          var input = keyOption.querySelector("input");
+          var keyName = input.getAttribute("data-key");
+          var display = input.checked;
+          var colorSelect = keyOption.querySelector("select");
+          var pushMe = { keyName : keyName, display : display, color : colorSelect.value};
+          this.graphschema.push(pushMe);
+        }
+      }
+
+      this.showData();
+
+    },
+    enteredView : function(){
+      var self = this;
+
+      //Listens to updates to the data set
+      // Problem is it listens to every god-damn storage and formchange
+
+      window.addEventListener('storage', this.updateKeyUI.bind(this), false);
+      window.addEventListener('formChange', this.updateKeyUI.bind(this), false);
+
+      this.updateKeyUI(); //Updates the graph display options UI
+
+      this.super();
+
+    },
+    getOrWaitForCeciApp: function(callback){
+      var ceciApp = document.querySelector("ceci-app");
+      if(!ceciApp){
+        window.addEventListener("CeciDataConnectionLoaded", function(){
+          callback(document.querySelector("ceci-app"));
+        });
+      } else {
+        if(ceciApp && ceciApp.firebase){
+          callback(ceciApp);
         } else {
-          self.storedData = self.storedData[self.dataname] || [];
-        }*/
+          window.addEventListener("CeciDataConnectionLoaded", function(){
+            callback(document.querySelector("ceci-app"));
+          });
+        }
+      }
+    },
+    showData: function(){
 
-        var itemList = self.shadowRoot.querySelector("#items");
-        itemList.innerHTML = "";
+      var self = this;
 
-        // For each item.. do a thing
-        //Should figure out a max;
+      //this.getOrWaitForCeciApp(function(ceciApp){
 
-        var max = 0;
+        //ceciApp.getFirebaseObject('form-data', "", function(data){
 
-        for(var i = 0; i < self.storedData.data.length; i++){
-           var item = self.storedData.data[i];
-console.log(item);
-           for(var key in item){
-             var v = item[key];
+          if(typeof self.graphschema == "string") {
+            self.graphschema = JSON.parse(self.graphschema);
+          }
+  // Just assuming first collection for now...
+          var data = window.CeciData.collections[0];
+          self.storedData = data || {};
 
-             for(var j = 0; j < self.storedData.model.length; j++) {
-               var k = self.storedData.model[j].name;
-               if(k == key) {
-                 if(self.storedData.model[j].type) {
-                   if(parseInt(v)){
+          //Handle case where dataview is just loading and listSchema hasn't been parsed and
+          //stored in keyConfig
+          // if(those.keyConfig && Object.getOwnPropertyNames(those.keyConfig).length < 1){
+          //   those.keyConfig = those.storedData[those.dataname+"_listschema"];
+          // }
 
-                     if(parseInt(v) > parseInt(max)) {
+          /*var lastData;
 
-                       max = v;
+          for (var i = 0; i < self.datascope.length; i++){
+            var scopeItem = self.datascope[i];
+            self.storedData = self.storedData[scopeItem["dataset"]][scopeItem["index"]];
+            lastData = scopeItem["dataset"];
+          }
 
+          if(lastData == self.dataname){
+            var blam = [];
+            blam.push(self.storedData);
+            self.storedData = blam;
+          } else {
+            self.storedData = self.storedData[self.dataname] || [];
+          }*/
+
+          var itemList = self.shadowRoot.querySelector("#items");
+          itemList.innerHTML = "";
+
+          // For each item.. do a thing
+          //Should figure out a max;
+
+          var max = 0;
+
+          for(var i = 0; i < self.storedData.data.length; i++){
+             var item = self.storedData.data[i];
+             for(var key in item){
+               var v = item[key];
+
+               for(var j = 0; j < self.storedData.model.length; j++) {
+                 var k = self.storedData.model[j].name;
+                 if(k == key) {
+                   if(self.storedData.model[j].type) {
+                     if(parseInt(v)){
+
+                       if(parseInt(v) > parseInt(max)) {
+
+                         max = v;
+
+                       }
                      }
                    }
                  }
-               }
-              }
-           }
-        }
-
-         console.log("max is " +   max);
-
-        self.shadowRoot.querySelector(".max").innerHTML = max;
-
-        for(var i = 0; i < self.storedData.data.length; i++){
-
-          var itemEl = document.createElement("div");
-          itemEl.classList.add("barGroup");
-
-          var item = self.storedData.data[i];
-
-          // for each item in a data group
-          for(var key in item){
-
-            for(var j = 0; j < self.storedData.model.length; j++) {
-               var k = self.storedData.model[j].name;
-               if(k == key && parseInt(item[key])) {
-                 if(self.storedData.model[j].type) {
-                   var barEl = document.createElement("div");
-                   barEl.classList.add("bar");
-                   barEl.style.backgroundColor = self.storedData.model[j].name;//classList.add(self.storedData.model[j].color);
-
-                   setTimeout(
-                    (function(s,v) {
-                        return function() {
-                          s.style.width = Math.floor(v/max * 100) + "%";
-                        }
-                    })(barEl,item[key]), 10);
-
-                   itemEl.appendChild(barEl);
-                 }
-               }
-            }
+                }
+             }
           }
-          itemList.appendChild(itemEl);
-        }
 
-        if(typeof self.storedData.model == "object") {
-          //self.storedData.model = JSON.stringify(self.storedData.model);
-        }
+           console.log("max is " +   max);
+
+          self.shadowRoot.querySelector(".max").innerHTML = max;
+
+          for(var i = 0; i < self.storedData.data.length; i++){
+
+            var itemEl = document.createElement("div");
+            itemEl.classList.add("barGroup");
+
+            var item = self.storedData.data[i];
+
+            // for each item in a data group
+            for(var key in item){
+
+              for(var j = 0; j < self.storedData.model.length; j++) {
+                 var k = self.storedData.model[j].name;
+                 if(k == key && parseInt(item[key])) {
+                   if(self.storedData.model[j].type) {
+                     var barEl = document.createElement("div");
+                     barEl.classList.add("bar");
+                     barEl.style.backgroundColor = self.storedData.model[j].name;//classList.add(self.storedData.model[j].color);
+
+                     setTimeout(
+                      (function(s,v) {
+                          return function() {
+                            s.style.width = Math.floor(v/max * 100) + "%";
+                          }
+                      })(barEl,item[key]), 10);
+
+                     itemEl.appendChild(barEl);
+                   }
+                 }
+              }
+            }
+            itemList.appendChild(itemEl);
+          }
+
+          if(typeof self.storedData.model == "object") {
+            //self.storedData.model = JSON.stringify(self.storedData.model);
+          }
+
+        //});
+
+
 
       //});
 
-
-
-    //});
-
-  }
+    }
+  });
 });
 </script>
 </polymer-element>
