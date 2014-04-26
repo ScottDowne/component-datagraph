@@ -45,6 +45,10 @@ require(['data-manager'], function(dataManager) {
       this.super();
       this.datascope = [];
       var self = this;
+      dataManager.on("dataCollectionReady", function(e) {
+        //var collection = e.detail.collection;
+        self.showData();
+      });
       dataManager.on("dataCollectionAdded", function(e) {
         var collection = e.detail.collection;
         self.showData();
@@ -67,7 +71,7 @@ require(['data-manager'], function(dataManager) {
       }
     },
     datanameChanged : function (oldValue, newValue) {
-      this.showData();
+      //this.showData();
     },
     showItem: function(e){
       this.datascope = e;
